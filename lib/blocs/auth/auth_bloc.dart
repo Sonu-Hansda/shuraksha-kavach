@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shurakhsa_kavach/enums/user_type.dart';
 import 'package:shurakhsa_kavach/repositories/auth_repository.dart';
 import 'package:shurakhsa_kavach/repositories/database_repository.dart';
 import 'auth_event.dart';
@@ -99,6 +100,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         userId: credential.user!.uid,
         phoneNumber: event.phoneNumber,
         name: event.name,
+        role: UserType.normal,
         isNewUser: true,
       ));
     } catch (e) {
@@ -123,15 +125,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       emit(AuthSuccess(
         userId: user.uid,
+        role: user.role,
         phoneNumber: user.phoneNumber,
         name: user.fullName,
       ));
     } catch (e) {
-      log('Login Error: $e');
       if (e is AuthenticationException) {
         emit(AuthFailure(e.message));
       } else if (e is DatabaseException) {
-        log(e.message);
         emit(AuthFailure(e.message));
       } else {
         emit(AuthFailure('Failed to sign in. Please try again.'));
@@ -209,11 +210,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final currentUser = authRepository.currentUser;
       if (currentUser != null) {
         final user = await databaseRepository.getUser(currentUser.uid);
-        emit(AuthSuccess(
-          userId: user.uid,
-          phoneNumber: user.phoneNumber,
-          name: user.fullName,
-        ));
+        emit(
+          AuthSuccess(
+            userId: user.uid,
+            phoneNumber: user.phoneNumber,
+            name: user.fullName,
+            role: user.role,
+          ),
+        );
       } else {
         emit(AuthInitial());
       }

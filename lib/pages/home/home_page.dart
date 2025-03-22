@@ -31,7 +31,6 @@ class _HomePageState extends State<HomePage>
   LatLng? _currentLocation;
   final MapController _mapController = MapController();
   final LatLng _defaultLocation = LatLng(22.777306, 86.145222);
-  bool _isMapLoading = true;
   String _selectedAddress = 'Select Location on Map';
   bool _isLoadingLocation = false;
   double _currentZoom = 15.0;

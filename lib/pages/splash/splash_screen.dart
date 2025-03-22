@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shurakhsa_kavach/blocs/auth/auth_bloc.dart';
 import 'package:shurakhsa_kavach/blocs/auth/auth_state.dart';
+import 'package:shurakhsa_kavach/enums/user_type.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -11,7 +12,11 @@ class SplashScreen extends StatelessWidget {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          Navigator.of(context).pushReplacementNamed('/home');
+          if (state.role == UserType.normal) {
+            Navigator.of(context).pushReplacementNamed('/home');
+          } else if (state.role == UserType.police) {
+            Navigator.of(context).pushReplacementNamed('/police');
+          }
         } else if (state is AuthInitial) {
           Navigator.of(context).pushReplacementNamed('/landing');
         }

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:shurakhsa_kavach/enums/user_type.dart';
 
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -33,18 +34,20 @@ class OtpVerified extends AuthState {
 class AuthSuccess extends AuthState {
   final String userId;
   final String phoneNumber;
+  final UserType role;
   final String? name;
   final bool isNewUser;
 
   const AuthSuccess({
     required this.userId,
     required this.phoneNumber,
+    required this.role,
     this.name,
     this.isNewUser = false,
   });
 
   @override
-  List<Object?> get props => [userId, phoneNumber, name, isNewUser];
+  List<Object?> get props => [userId, phoneNumber, name, isNewUser, role];
 }
 
 class AuthFailure extends AuthState {

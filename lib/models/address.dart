@@ -14,6 +14,8 @@ class Address {
   final bool isLocked;
   final DateTime createdAt;
   final DateTime updatedAt;
+  String? userFullName;
+  String? userPhoneNumber;
 
   Address({
     required this.id,
@@ -29,6 +31,8 @@ class Address {
     this.isLocked = false,
     required this.createdAt,
     required this.updatedAt,
+    this.userFullName,
+    this.userPhoneNumber,
   });
 
   factory Address.fromJson(Map<String, dynamic> json) {
@@ -46,6 +50,8 @@ class Address {
       isLocked: json['isLocked'] ?? false,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       updatedAt: (json['updatedAt'] as Timestamp).toDate(),
+      userFullName: json['userFullName'],
+      userPhoneNumber: json['userPhoneNumber'],
     );
   }
 
@@ -64,6 +70,8 @@ class Address {
       'isLocked': isLocked,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'userFullName': userFullName,
+      'userPhoneNumber': userPhoneNumber,
     };
   }
 
@@ -96,6 +104,8 @@ class Address {
       isLocked: isLocked ?? this.isLocked,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      userFullName: userFullName,
+      userPhoneNumber: userPhoneNumber,
     );
   }
 }

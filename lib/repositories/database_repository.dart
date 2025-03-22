@@ -156,16 +156,33 @@ class DatabaseRepository {
     }
   }
 
-  Stream<List<AppUser>> getPoliceOfficersStream() {
-    return _firestore
-        .collection('users')
-        .where('role', isEqualTo: UserType.police.toString().split('.').last)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => AppUser.fromJson(doc.data()..['uid'] = doc.id))
-              .toList(),
-        );
+  Future<List<Address>> getLockedAddresses() async {
+    try {
+      final snapshot = await _firestore
+          .collection('addresses')
+          .where('isLocked', isEqualTo: true)
+          .get();
+
+      List<Address> addresses = [];
+
+      for (var doc in snapshot.docs) {
+        final address = Address.fromJson(doc.data()..['id'] = doc.id);
+        // Get user details for each address
+        final userDoc =
+            await _firestore.collection('users').doc(address.userId).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data()!;
+          address.userFullName =
+              "${userData['firstName']} ${userData['lastName']}";
+          address.userPhoneNumber = userData['phoneNumber'];
+        }
+        addresses.add(address);
+      }
+
+      return addresses;
+    } catch (e) {
+      throw DatabaseException('Failed to get locked addresses: $e');
+    }
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getNearbyUsers({

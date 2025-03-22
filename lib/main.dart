@@ -6,11 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shurakhsa_kavach/blocs/auth/auth_bloc.dart';
 import 'package:shurakhsa_kavach/blocs/auth/auth_event.dart';
 import 'package:shurakhsa_kavach/blocs/address/address_bloc.dart';
+import 'package:shurakhsa_kavach/blocs/police/police_bloc.dart';
 import 'package:shurakhsa_kavach/core/theme/app_theme.dart';
 import 'package:shurakhsa_kavach/pages/auth/landing_page.dart';
 import 'package:shurakhsa_kavach/pages/auth/login_page.dart';
 import 'package:shurakhsa_kavach/pages/auth/register_page.dart';
 import 'package:shurakhsa_kavach/pages/home/home_page.dart';
+import 'package:shurakhsa_kavach/pages/police/police_screen.dart';
 import 'package:shurakhsa_kavach/pages/splash/splash_screen.dart';
 import 'package:shurakhsa_kavach/repositories/auth_repository.dart';
 import 'package:shurakhsa_kavach/repositories/database_repository.dart';
@@ -66,6 +68,11 @@ class MyApp extends StatelessWidget {
             databaseRepository: databaseRepository,
           ),
         ),
+        BlocProvider<PoliceBloc>(
+          create: (context) => PoliceBloc(
+            databaseRepository: databaseRepository,
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'Shurakhsa Kavach',
@@ -79,6 +86,7 @@ class MyApp extends StatelessWidget {
           '/landing': (context) => const LandingPage(),
           '/login': (context) => const LoginPage(),
           '/register': (context) => const RegisterPage(),
+          '/police': (context) => const PoliceScreen(),
           '/home': (context) => const HomePage(),
         },
       ),

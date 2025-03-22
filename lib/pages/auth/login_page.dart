@@ -4,6 +4,7 @@ import 'package:shurakhsa_kavach/blocs/auth/auth_bloc.dart';
 import 'package:shurakhsa_kavach/blocs/auth/auth_event.dart';
 import 'package:shurakhsa_kavach/blocs/auth/auth_state.dart';
 import 'package:shurakhsa_kavach/core/widgets/custom_snackbar.dart';
+import 'package:shurakhsa_kavach/enums/user_type.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -301,7 +302,13 @@ class _LoginPageState extends State<LoginPage> {
             isSuccess: false,
           );
         } else if (state is AuthSuccess) {
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          if (state.role == UserType.normal) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/home', (route) => false);
+          } else if (state.role == UserType.police) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/police', (route) => false);
+          }
         }
       },
       child: Scaffold(

@@ -20,7 +20,7 @@ class OtpVerificationResult {
 class AuthRepository {
   final FirebaseAuth _firebaseAuth;
   final SmsService _smsService;
-  final Map<String, String> _otpStorage = {}; // Temporary storage for OTPs
+  final Map<String, String> _otpStorage = {};
 
   AuthRepository({
     FirebaseAuth? firebaseAuth,
@@ -29,7 +29,7 @@ class AuthRepository {
         _smsService = smsService ?? SmsService();
 
   String _generateOtp() {
-    return (100000 + Random().nextInt(900000)).toString(); // 6-digit OTP
+    return (100000 + Random().nextInt(900000)).toString();
   }
 
   String _phoneNumberToEmail(String phoneNumber) {
