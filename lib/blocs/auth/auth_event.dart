@@ -35,15 +35,19 @@ class CreateUserEvent extends AuthEvent {
   final String phoneNumber;
   final String name;
   final String? password;
+  final String? otp;
+  final String? verificationId;
 
   const CreateUserEvent({
     required this.phoneNumber,
     required this.name,
     this.password,
+    this.otp,
+    this.verificationId,
   });
 
   @override
-  List<Object?> get props => [phoneNumber, name, password];
+  List<Object?> get props => [phoneNumber, name, password, otp, verificationId];
 }
 
 class LoginEvent extends AuthEvent {

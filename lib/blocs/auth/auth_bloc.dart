@@ -56,9 +56,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       VerifyOtpEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      final credential = await authRepository.verifyOTP(
+      await authRepository.verifyOTP(
         verificationId: event.verificationId,
         otp: event.otp,
+        phoneNumber: event.phoneNumber,
       );
       emit(OtpVerified(event.phoneNumber));
     } catch (e) {
@@ -80,11 +81,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password!,
       );
 
+      // Split name into first and last name
+      final nameParts = event.name.trim().split(' ');
+      final firstName = nameParts.first;
+      final lastName =
+          nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+      // Create user in database
       await databaseRepository.createUser(
         uid: credential.user!.uid,
-        firstName: event.name.split(' ').first,
-        lastName:
-            event.name.split(' ').length > 1 ? event.name.split(' ').last : '',
+        firstName: firstName,
+        lastName: lastName,
         phoneNumber: event.phoneNumber,
       );
 
@@ -122,6 +129,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       log('Login Error: $e');
       if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else if (e is DatabaseException) {
+        log(e.message);
         emit(AuthFailure(e.message));
       } else {
         emit(AuthFailure('Failed to sign in. Please try again.'));
