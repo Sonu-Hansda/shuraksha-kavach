@@ -105,14 +105,15 @@ class DatabaseRepository {
         );
   }
 
-  Future<String> addAddress(Address address) async {
+  Future<void> addOrUpdateAddress(Address address) async {
     try {
-      // First create the document to get the ID
-      final docRef = _firestore.collection('addresses').doc();
+      final docRef = _firestore.collection('addresses').doc(address.userId);
 
-      // Create a new address with the generated ID
+      final docSnapshot = await docRef.get();
+      final now = DateTime.now();
+
       final addressWithId = Address(
-        id: docRef.id,
+        id: address.userId,
         userId: address.userId,
         houseName: address.houseName,
         street: address.street,
@@ -123,44 +124,36 @@ class DatabaseRepository {
         landmark: address.landmark,
         coordinates: address.coordinates,
         isLocked: address.isLocked,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: docSnapshot.exists
+            ? (docSnapshot.data()?['createdAt'] as Timestamp).toDate()
+            : now,
+        updatedAt: now,
       );
 
-      // Save the address with its ID
-      await docRef.set({
-        ...addressWithId.toJson(),
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      return docRef.id;
+      if (docSnapshot.exists) {
+        await docRef.update({
+          ...addressWithId.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        await docRef.set({
+          ...addressWithId.toJson(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
     } catch (e) {
-      throw DatabaseException('Failed to add address: $e');
+      throw DatabaseException('Failed to save address: $e');
     }
   }
 
-  Future<void> updateAddress(String id, Map<String, dynamic> data) async {
+  Future<Address?> getUserAddress(String userId) async {
     try {
-      await _firestore.collection('addresses').doc(id).update({
-        ...data,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final doc = await _firestore.collection('addresses').doc(userId).get();
+      return Address.fromJson(doc.data()!..['id'] = doc.id);
     } catch (e) {
-      throw DatabaseException('Failed to update address: $e');
+      throw DatabaseException('Failed to get user address');
     }
-  }
-
-  Stream<List<Address>> userAddressesStream(String userId) {
-    return _firestore
-        .collection('addresses')
-        .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Address.fromJson(doc.data()..['id'] = doc.id))
-              .toList(),
-        );
   }
 
   Stream<List<AppUser>> getPoliceOfficersStream() {
