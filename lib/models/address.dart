@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shurakhsa_kavach/enums/address_type.dart';
 
 class Address {
   final String id;
   final String userId;
-  final String houseNumber;
   final String houseName;
   final String street;
   final String city;
@@ -13,15 +11,13 @@ class Address {
   final GeoPoint coordinates;
   final String country;
   final String landmark;
-  final AddressType addressType;
-  final bool isDefault;
+  final bool isLocked;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   Address({
     required this.id,
     required this.userId,
-    required this.houseNumber,
     required this.houseName,
     required this.street,
     required this.city,
@@ -30,8 +26,7 @@ class Address {
     required this.coordinates,
     required this.country,
     required this.landmark,
-    required this.addressType,
-    this.isDefault = false,
+    this.isLocked = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -40,7 +35,6 @@ class Address {
     return Address(
       id: json['id'],
       userId: json['userId'],
-      houseNumber: json['houseNumber'],
       houseName: json['houseName'],
       street: json['street'],
       city: json['city'],
@@ -49,10 +43,7 @@ class Address {
       coordinates: json['coordinates'],
       country: json['country'],
       landmark: json['landmark'],
-      addressType: AddressType.values.firstWhere(
-        (e) => e.toString() == 'AddressType.${json['addressType']}',
-      ),
-      isDefault: json['isDefault'] ?? false,
+      isLocked: json['isLocked'] ?? false,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       updatedAt: (json['updatedAt'] as Timestamp).toDate(),
     );
@@ -62,7 +53,6 @@ class Address {
     return {
       'id': id,
       'userId': userId,
-      'houseNumber': houseNumber,
       'houseName': houseName,
       'street': street,
       'city': city,
@@ -71,19 +61,17 @@ class Address {
       'coordinates': coordinates,
       'country': country,
       'landmark': landmark,
-      'addressType': addressType.toString().split('.').last,
-      'isDefault': isDefault,
+      'isLocked': isLocked,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
   String get formattedAddress {
-    return '$houseNumber, $houseName, $street, $landmark, $city, $state, $country - $zipCode';
+    return '$houseName, $street, $landmark, $city, $state, $country - $zipCode';
   }
 
   Address copyWith({
-    String? houseNumber,
     String? houseName,
     String? street,
     String? city,
@@ -92,13 +80,11 @@ class Address {
     GeoPoint? coordinates,
     String? country,
     String? landmark,
-    AddressType? addressType,
-    bool? isDefault,
+    bool? isLocked,
   }) {
     return Address(
       id: id,
       userId: userId,
-      houseNumber: houseNumber ?? this.houseNumber,
       houseName: houseName ?? this.houseName,
       street: street ?? this.street,
       city: city ?? this.city,
@@ -107,8 +93,7 @@ class Address {
       coordinates: coordinates ?? this.coordinates,
       country: country ?? this.country,
       landmark: landmark ?? this.landmark,
-      addressType: addressType ?? this.addressType,
-      isDefault: isDefault ?? this.isDefault,
+      isLocked: isLocked ?? this.isLocked,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
