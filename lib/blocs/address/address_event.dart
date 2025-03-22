@@ -7,7 +7,7 @@ abstract class AddressEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class AddAddressEvent extends AddressEvent {
+class AddOrUpdateAddressEvent extends AddressEvent {
   final String houseName;
   final String street;
   final String district;
@@ -19,7 +19,7 @@ class AddAddressEvent extends AddressEvent {
   final String zipCode;
   final String landmark;
 
-  const AddAddressEvent({
+  const AddOrUpdateAddressEvent({
     required this.houseName,
     required this.street,
     required this.district,
@@ -47,32 +47,6 @@ class AddAddressEvent extends AddressEvent {
       ];
 }
 
-class UpdateAddressEvent extends AddressEvent {
-  final String addressId;
-  final Map<String, dynamic> data;
-
-  const UpdateAddressEvent({
-    required this.addressId,
-    required this.data,
-  });
-
-  @override
-  List<Object?> get props => [addressId, data];
-}
-
-class ToggleLockStatusEvent extends AddressEvent {
-  final String addressId;
-  final bool isLocked;
-
-  const ToggleLockStatusEvent({
-    required this.addressId,
-    required this.isLocked,
-  });
-
-  @override
-  List<Object?> get props => [addressId, isLocked];
-}
-
 class LoadUserAddressesEvent extends AddressEvent {
   final String userId;
 
@@ -80,8 +54,4 @@ class LoadUserAddressesEvent extends AddressEvent {
 
   @override
   List<Object?> get props => [userId];
-}
-
-class LoadLockedAddressesEvent extends AddressEvent {
-  const LoadLockedAddressesEvent();
 }

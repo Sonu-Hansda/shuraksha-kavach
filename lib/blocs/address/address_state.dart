@@ -12,13 +12,13 @@ class AddressInitial extends AddressState {}
 
 class AddressLoading extends AddressState {}
 
-class AddressSuccess extends AddressState {
-  final List<Address> addresses;
+class AddressLoaded extends AddressState {
+  final Address? address;
 
-  const AddressSuccess({required this.addresses});
+  const AddressLoaded({required this.address});
 
   @override
-  List<Object?> get props => [addresses];
+  List<Object?> get props => [address];
 }
 
 class AddressError extends AddressState {
@@ -37,26 +37,4 @@ class AddressAdded extends AddressState {
 
   @override
   List<Object?> get props => [address];
-}
-
-class AddressUpdated extends AddressState {
-  final Address address;
-
-  const AddressUpdated({required this.address});
-
-  @override
-  List<Object?> get props => [address];
-}
-
-class LockStatusUpdated extends AddressState {
-  final String addressId;
-  final bool isLocked;
-
-  const LockStatusUpdated({
-    required this.addressId,
-    required this.isLocked,
-  });
-
-  @override
-  List<Object?> get props => [addressId, isLocked];
 }

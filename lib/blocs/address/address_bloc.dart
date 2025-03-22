@@ -8,27 +8,23 @@ import 'package:shurakhsa_kavach/repositories/database_repository.dart';
 
 class AddressBloc extends Bloc<AddressEvent, AddressState> {
   final DatabaseRepository _databaseRepository;
-  StreamSubscription? _addressesSubscription;
 
   AddressBloc({required DatabaseRepository databaseRepository})
       : _databaseRepository = databaseRepository,
         super(AddressInitial()) {
-    on<AddAddressEvent>(_onAddAddress);
-    on<UpdateAddressEvent>(_onUpdateAddress);
-    on<ToggleLockStatusEvent>(_onToggleLockStatus);
-    on<LoadUserAddressesEvent>(_onLoadUserAddresses);
-    on<LoadLockedAddressesEvent>(_onLoadLockedAddresses);
+    on<AddOrUpdateAddressEvent>(_onAddOrUpdateAddress);
+    on<LoadUserAddressesEvent>(_onLoadUserAddress);
   }
 
-  Future<void> _onAddAddress(
-    AddAddressEvent event,
+  Future<void> _onAddOrUpdateAddress(
+    AddOrUpdateAddressEvent event,
     Emitter<AddressState> emit,
   ) async {
     try {
       emit(AddressLoading());
 
       final address = Address(
-        id: '',
+        id: event.userId,
         userId: event.userId,
         houseName: event.houseName,
         street: event.street,
@@ -43,98 +39,23 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         updatedAt: DateTime.now(),
       );
 
-      final addressId = await _databaseRepository.addAddress(address);
-
-      final updatedAddress = Address(
-        id: addressId,
-        userId: address.userId,
-        houseName: address.houseName,
-        street: address.street,
-        city: address.city,
-        state: address.state,
-        country: address.country,
-        zipCode: address.zipCode,
-        landmark: address.landmark,
-        coordinates: address.coordinates,
-        isLocked: address.isLocked,
-        createdAt: address.createdAt,
-        updatedAt: address.updatedAt,
-      );
-
-      emit(AddressAdded(address: updatedAddress));
+      await _databaseRepository.addOrUpdateAddress(address);
+      emit(AddressAdded(address: address));
     } catch (e) {
-      emit(AddressError(message: 'Failed to add address: $e'));
+      emit(AddressError(message: 'Failed to add address'));
     }
   }
 
-  Future<void> _onUpdateAddress(
-    UpdateAddressEvent event,
-    Emitter<AddressState> emit,
-  ) async {
-    try {
-      emit(AddressLoading());
-      await _databaseRepository.updateAddress(event.addressId, event.data);
-    } catch (e) {
-      emit(AddressError(message: 'Failed to update address: $e'));
-    }
-  }
-
-  Future<void> _onToggleLockStatus(
-    ToggleLockStatusEvent event,
-    Emitter<AddressState> emit,
-  ) async {
-    try {
-      emit(AddressLoading());
-      await _databaseRepository.updateAddress(
-        event.addressId,
-        {'isLocked': event.isLocked},
-      );
-      emit(LockStatusUpdated(
-        addressId: event.addressId,
-        isLocked: event.isLocked,
-      ));
-    } catch (e) {
-      emit(AddressError(message: 'Failed to update lock status: $e'));
-    }
-  }
-
-  Future<void> _onLoadUserAddresses(
+  Future<void> _onLoadUserAddress(
     LoadUserAddressesEvent event,
     Emitter<AddressState> emit,
   ) async {
     try {
       emit(AddressLoading());
-      _addressesSubscription?.cancel();
-      _addressesSubscription = _databaseRepository
-          .userAddressesStream(event.userId)
-          .listen((addresses) {
-        add(_UpdateAddressesEvent(addresses));
-      });
+      final address = await _databaseRepository.getUserAddress(event.userId);
+      emit(AddressLoaded(address: address));
     } catch (e) {
-      emit(AddressError(message: 'Failed to load addresses: $e'));
+      emit(AddressError(message: 'Failed to load address'));
     }
   }
-
-  Future<void> _onLoadLockedAddresses(
-    LoadLockedAddressesEvent event,
-    Emitter<AddressState> emit,
-  ) async {
-    // This would be implemented when we add the functionality to fetch locked addresses
-    // For police officers to monitor
-  }
-
-  @override
-  Future<void> close() {
-    _addressesSubscription?.cancel();
-    return super.close();
-  }
-}
-
-class _UpdateAddressesEvent extends AddressEvent {
-  final List<Address> addresses;
-
-  const _UpdateAddressesEvent(this.addresses);
-
-  @override
-  List<Object?> get props => [addresses];
 }
