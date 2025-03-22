@@ -55,7 +55,6 @@ class _HomePageState extends State<HomePage>
         curve: Curves.easeInOut,
       ),
     );
-    _getCurrentLocation();
 
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthSuccess) {
@@ -70,6 +69,8 @@ class _HomePageState extends State<HomePage>
     _stateController = TextEditingController();
     _zipCodeController = TextEditingController();
     _landmarkController = TextEditingController();
+
+    _getCurrentLocation();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -98,9 +99,12 @@ class _HomePageState extends State<HomePage>
         _isLoadingLocation = false;
       });
 
-      _mapController.move(_currentLocation!, 18.0);
+      try {
+        _mapController.move(_currentLocation!, 18.0);
+      } catch (e) {
+        // Map not ready yet
+      }
     } catch (e) {
-      debugPrint('Error getting location: $e');
       setState(() => _isLoadingLocation = false);
     }
   }
@@ -187,7 +191,7 @@ class _HomePageState extends State<HomePage>
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthSuccess) {
       context.read<AddressBloc>().add(
-            AddAddressEvent(
+            AddOrUpdateAddressEvent(
               houseName: _houseNameController.text,
               street: _streetController.text,
               district: _districtController.text,
@@ -215,7 +219,7 @@ class _HomePageState extends State<HomePage>
     _districtController.text = address.city;
     _stateController.text = address.state;
     _zipCodeController.text = address.zipCode;
-    _landmarkController.text = address.landmark ?? '';
+    _landmarkController.text = address.landmark;
     setState(() {
       _selectedLocation = LatLng(
         address.coordinates.latitude,
@@ -245,22 +249,10 @@ class _HomePageState extends State<HomePage>
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Address added successfully')),
               );
-              // Clear the form
-              _houseNameController.clear();
-              _streetController.clear();
-              _districtController.clear();
-              _stateController.clear();
-              _zipCodeController.clear();
-              _landmarkController.clear();
-              setState(() {
-                _selectedLocation = null;
-                _selectedAddress = 'Select Location on Map';
-                _isLocked = false;
-                _lockAnimationController.reverse();
-              });
-            } else if (state is AddressesLoaded && state.addresses.isNotEmpty) {
-              // Fill form with the first address if available
-              _fillFormWithAddress(state.addresses.first);
+            } else if (state is AddressLoaded) {
+              if (state.address != null) {
+                _fillFormWithAddress(state.address!);
+              }
             }
           },
         ),
