@@ -19,14 +19,16 @@ class SendOtpEvent extends AuthEvent {
 class VerifyOtpEvent extends AuthEvent {
   final String phoneNumber;
   final String otp;
+  final String verificationId;
 
   const VerifyOtpEvent({
     required this.phoneNumber,
     required this.otp,
+    required this.verificationId,
   });
 
   @override
-  List<Object?> get props => [phoneNumber, otp];
+  List<Object?> get props => [phoneNumber, otp, verificationId];
 }
 
 class CreateUserEvent extends AuthEvent {
@@ -67,12 +69,20 @@ class ResetPasswordEvent extends AuthEvent {
 }
 
 class UpdatePasswordEvent extends AuthEvent {
+  final String phoneNumber;
   final String newPassword;
+  final String verificationId;
+  final String otp;
 
-  const UpdatePasswordEvent({required this.newPassword});
+  const UpdatePasswordEvent({
+    required this.phoneNumber,
+    required this.newPassword,
+    required this.verificationId,
+    required this.otp,
+  });
 
   @override
-  List<Object?> get props => [newPassword];
+  List<Object?> get props => [phoneNumber, newPassword, verificationId, otp];
 }
 
 class LogoutEvent extends AuthEvent {}

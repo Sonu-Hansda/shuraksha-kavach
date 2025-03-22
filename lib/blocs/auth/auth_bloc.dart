@@ -1,12 +1,22 @@
+import 'dart:developer';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shurakhsa_kavach/repositories/auth_repository.dart';
+import 'package:shurakhsa_kavach/repositories/database_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final SharedPreferences _prefs;
+  final SharedPreferences prefs;
+  final AuthRepository authRepository;
+  final DatabaseRepository databaseRepository;
 
-  AuthBloc(this._prefs) : super(AuthInitial()) {
+  AuthBloc({
+    required this.prefs,
+    required this.authRepository,
+    required this.databaseRepository,
+  }) : super(AuthInitial()) {
     on<SendOtpEvent>(_onSendOtp);
     on<VerifyOtpEvent>(_onVerifyOtp);
     on<CreateUserEvent>(_onCreateUser);
@@ -20,13 +30,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onSendOtp(SendOtpEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // For now, accept any phone number and simulate OTP sending
-      emit(OtpSent(event.phoneNumber));
+      await authRepository.verifyPhoneNumber(
+        phoneNumber: event.phoneNumber,
+        onCodeSent: (verificationId, resendToken) {
+          emit(OtpSent(event.phoneNumber, verificationId: verificationId));
+        },
+        onVerificationCompleted: (message) {
+          emit(OtpVerified(event.phoneNumber));
+        },
+        onVerificationFailed: (message) {
+          emit(AuthFailure(message));
+        },
+      );
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      log('SendOtp Error: $e');
+      if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else {
+        emit(AuthFailure('Failed to send OTP. Please try again.'));
+      }
     }
   }
 
@@ -34,17 +56,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       VerifyOtpEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Hardcoded OTP verification
-      if (event.otp == '112334') {
-        emit(OtpVerified(event.phoneNumber));
-      } else {
-        emit(const AuthFailure('Invalid OTP'));
-      }
+      final credential = await authRepository.verifyOTP(
+        verificationId: event.verificationId,
+        otp: event.otp,
+      );
+      emit(OtpVerified(event.phoneNumber));
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      log('VerifyOtp Error: $e');
+      if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else {
+        emit(AuthFailure('Failed to verify OTP. Please try again.'));
+      }
     }
   }
 
@@ -52,46 +75,57 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       CreateUserEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 1));
+      final credential = await authRepository.signUpWithPhoneAndPassword(
+        phoneNumber: event.phoneNumber,
+        password: event.password!,
+      );
 
-      // Store user data in SharedPreferences
-      await _prefs.setString('user_id', 'user_${event.phoneNumber}');
-      await _prefs.setString('phone_number', event.phoneNumber);
-      await _prefs.setString('name', event.name);
-      if (event.password != null) {
-        await _prefs.setString('password', event.password!);
-      }
+      await databaseRepository.createUser(
+        uid: credential.user!.uid,
+        firstName: event.name.split(' ').first,
+        lastName:
+            event.name.split(' ').length > 1 ? event.name.split(' ').last : '',
+        phoneNumber: event.phoneNumber,
+      );
 
       emit(AuthSuccess(
-        userId: 'user_${event.phoneNumber}',
+        userId: credential.user!.uid,
         phoneNumber: event.phoneNumber,
         name: event.name,
         isNewUser: true,
       ));
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      log('CreateUser Error: $e');
+      if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else {
+        emit(AuthFailure('Failed to create account. Please try again.'));
+      }
     }
   }
 
   Future<void> _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 1));
+      final credential = await authRepository.signInWithPhoneAndPassword(
+        phoneNumber: event.phoneNumber,
+        password: event.password,
+      );
 
-      // Hardcoded login verification
-      if (event.phoneNumber == '7033167930' && event.password == 'Sonu123') {
-        emit(AuthSuccess(
-          userId: 'user_${event.phoneNumber}',
-          phoneNumber: event.phoneNumber,
-          name: 'Sonu', // Hardcoded name
-        ));
-      } else {
-        emit(const AuthFailure('Invalid phone number or password'));
-      }
+      final user = await databaseRepository.getUser(credential.user!.uid);
+
+      emit(AuthSuccess(
+        userId: user.uid,
+        phoneNumber: user.phoneNumber,
+        name: user.fullName,
+      ));
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      log('Login Error: $e');
+      if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else {
+        emit(AuthFailure('Failed to sign in. Please try again.'));
+      }
     }
   }
 
@@ -99,13 +133,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ResetPasswordEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // For now, accept any phone number and simulate OTP sending
-      emit(OtpSent(event.phoneNumber));
+      await authRepository.verifyPhoneNumber(
+        phoneNumber: event.phoneNumber,
+        onCodeSent: (verificationId, resendToken) {
+          emit(OtpSent(event.phoneNumber, verificationId: verificationId));
+        },
+        onVerificationCompleted: (message) {
+          emit(OtpVerified(event.phoneNumber));
+        },
+        onVerificationFailed: (message) {
+          emit(AuthFailure(message));
+        },
+      );
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      log('ResetPassword Error: $e');
+      if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else {
+        emit(AuthFailure(
+            'Failed to initiate password reset. Please try again.'));
+      }
     }
   }
 
@@ -113,25 +160,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       UpdatePasswordEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Update password in SharedPreferences
-      await _prefs.setString('password', event.newPassword);
+      await authRepository.resetPasswordWithPhone(
+        phoneNumber: event.phoneNumber,
+        newPassword: event.newPassword,
+        verificationId: event.verificationId,
+        otp: event.otp,
+      );
       emit(PasswordResetSuccess());
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      log('UpdatePassword Error: $e');
+      if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else {
+        emit(AuthFailure('Failed to update password. Please try again.'));
+      }
     }
   }
 
   Future<void> _onLogout(LogoutEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      // Clear user data from SharedPreferences
-      await _prefs.clear();
+      await authRepository.signOut();
       emit(LoggedOut());
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      log('Logout Error: $e');
+      if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else {
+        emit(AuthFailure('Failed to sign out. Please try again.'));
+      }
     }
   }
 
@@ -139,22 +196,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       CheckAuthStatusEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      // Check if user is logged in using SharedPreferences
-      final userId = _prefs.getString('user_id');
-      final phoneNumber = _prefs.getString('phone_number');
-      final name = _prefs.getString('name');
-
-      if (userId != null && phoneNumber != null) {
+      final currentUser = authRepository.currentUser;
+      if (currentUser != null) {
+        final user = await databaseRepository.getUser(currentUser.uid);
         emit(AuthSuccess(
-          userId: userId,
-          phoneNumber: phoneNumber,
-          name: name,
+          userId: user.uid,
+          phoneNumber: user.phoneNumber,
+          name: user.fullName,
         ));
       } else {
         emit(AuthInitial());
       }
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      log('CheckAuthStatus Error: $e');
+      if (e is AuthenticationException) {
+        emit(AuthFailure(e.message));
+      } else {
+        emit(AuthFailure(
+            'Failed to check authentication status. Please try again.'));
+      }
     }
   }
 }

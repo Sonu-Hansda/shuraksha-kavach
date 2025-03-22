@@ -13,11 +13,12 @@ class AuthLoading extends AuthState {}
 
 class OtpSent extends AuthState {
   final String phoneNumber;
+  final String verificationId;
 
-  const OtpSent(this.phoneNumber);
+  const OtpSent(this.phoneNumber, {required this.verificationId});
 
   @override
-  List<Object?> get props => [phoneNumber];
+  List<Object?> get props => [phoneNumber, verificationId];
 }
 
 class OtpVerified extends AuthState {
