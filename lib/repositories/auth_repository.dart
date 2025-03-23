@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:developer' as dev;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shurakhsa_kavach/core/services/sms_service.dart';
 
@@ -99,9 +100,11 @@ class AuthRepository {
     required Function(String) onVerificationFailed,
   }) async {
     try {
-      // Using predefined OTP temporarily until SMS service is ready
-      const otp = '112334';
+      final otp = _generateOtp();
       _otpStorage[phoneNumber] = otp;
+
+      // Send OTP via SMS
+      await _smsService.sendOtp(phoneNumber, otp);
 
       // Using phone number as verification ID temporarily
       onCodeSent(phoneNumber, null);
@@ -165,35 +168,34 @@ class AuthRepository {
     required String phoneNumber,
     required String newPassword,
     required String verificationId,
-    required String otp,
   }) async {
     try {
       final email = _phoneNumberToEmail(phoneNumber);
 
-      // Try to sign in with dummy password to check if user exists
       try {
         await _firebaseAuth.signInWithEmailAndPassword(
           email: email,
           password: 'dummy-password',
         );
       } on FirebaseAuthException catch (e) {
+        dev.log('Firebase auth result: ${e.code}');
         if (e.code == 'user-not-found') {
           throw AuthenticationException(
               'No account found with this phone number');
         }
       }
 
-      // Verify OTP
-      final storedOtp = _otpStorage[phoneNumber];
-      if (storedOtp == null || storedOtp != otp) {
-        throw AuthenticationException('Invalid OTP');
+      if (_firebaseAuth.currentUser == null) {
+        throw AuthenticationException('Failed to authenticate user');
       }
 
-      // Update password
       await _firebaseAuth.currentUser?.updatePassword(newPassword);
+
+      await _firebaseAuth.signOut();
     } catch (e) {
+      dev.log('Password reset error: $e');
       if (e is AuthenticationException) {
-        throw e;
+        rethrow;
       }
       throw AuthenticationException('Failed to reset password: $e');
     }

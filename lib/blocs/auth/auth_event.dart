@@ -76,17 +76,15 @@ class UpdatePasswordEvent extends AuthEvent {
   final String phoneNumber;
   final String newPassword;
   final String verificationId;
-  final String otp;
 
   const UpdatePasswordEvent({
     required this.phoneNumber,
     required this.newPassword,
     required this.verificationId,
-    required this.otp,
   });
 
   @override
-  List<Object?> get props => [phoneNumber, newPassword, verificationId, otp];
+  List<Object?> get props => [phoneNumber, newPassword, verificationId];
 }
 
 class LogoutEvent extends AuthEvent {}

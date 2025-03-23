@@ -47,10 +47,10 @@ class SmsService {
         final jsonResponse = json.decode(response.body) as Map<String, dynamic>;
         return Fast2SmsResponse.fromJson(jsonResponse);
       } else {
-        throw Exception('Failed to send OTP: ${response.statusCode}');
+        throw Exception('Failed to send OTP');
       }
     } catch (e) {
-      throw Exception('Failed to send OTP: $e');
+      throw Exception('Failed to send OTP');
     }
   }
 }

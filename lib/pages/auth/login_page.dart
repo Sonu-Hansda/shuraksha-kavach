@@ -41,29 +41,38 @@ class _LoginPageState extends State<LoginPage> {
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
-          void _handlePhoneSubmit() {
+          void handlePhoneSubmit() {
             if (_forgotPasswordFormKey.currentState!.validate()) {
-              context.read<AuthBloc>().add(ResetPasswordEvent(
-                    phoneNumber: _resetPhoneController.text,
-                  ));
+              context.read<AuthBloc>().add(
+                    ResetPasswordEvent(
+                      phoneNumber: _resetPhoneController.text,
+                    ),
+                  );
             }
           }
 
-          void _handleOtpVerification() {
+          void handleOtpVerification() {
             if (_forgotPasswordFormKey.currentState!.validate()) {
-              // context.read<AuthBloc>().add(VerifyOtpEvent(
-              //       phoneNumber: _resetPhoneController.text,
-              //       otp: _resetOtpController.text,
-              //     ));
+              context.read<AuthBloc>().add(
+                    VerifyOtpEvent(
+                      phoneNumber: _resetPhoneController.text,
+                      otp: _resetOtpController.text,
+                      verificationId: _resetPhoneController
+                          .text, // Using phone number as temp verificationId
+                    ),
+                  );
             }
           }
 
-          void _handlePasswordReset() {
+          void handlePasswordReset() {
             if (_forgotPasswordFormKey.currentState!.validate()) {
-              // context.read<AuthBloc>().add(UpdatePasswordEvent(
-              //       newPassword: _newPasswordController.text,
-              //     ));
-              Navigator.pop(context);
+              context.read<AuthBloc>().add(
+                    UpdatePasswordEvent(
+                      phoneNumber: _resetPhoneController.text,
+                      newPassword: _newPasswordController.text,
+                      verificationId: _resetPhoneController.text,
+                    ),
+                  );
             }
           }
 
@@ -78,6 +87,7 @@ class _LoginPageState extends State<LoginPage> {
               } else if (state is OtpSent) {
                 setState(() {
                   _showOtpField = true;
+                  _showNewPasswordFields = false;
                 });
                 CustomSnackBar.show(
                   context,
@@ -88,12 +98,28 @@ class _LoginPageState extends State<LoginPage> {
                 setState(() {
                   _showNewPasswordFields = true;
                 });
-              } else if (state is PasswordResetSuccess) {
                 CustomSnackBar.show(
                   context,
-                  message: 'Password reset successful!',
+                  message: 'OTP verified successfully!',
                   isSuccess: true,
                 );
+              } else if (state is PasswordResetSuccess) {
+                Navigator.pop(context);
+                CustomSnackBar.show(
+                  context,
+                  message:
+                      'Password reset successful! Please login with your new password.',
+                  isSuccess: true,
+                );
+                // Reset the form
+                _resetPhoneController.clear();
+                _resetOtpController.clear();
+                _newPasswordController.clear();
+                _confirmNewPasswordController.clear();
+                setState(() {
+                  _showOtpField = false;
+                  _showNewPasswordFields = false;
+                });
               }
             },
             child: AlertDialog(
@@ -232,10 +258,10 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: state is AuthLoading
                             ? null
                             : _showNewPasswordFields
-                                ? _handlePasswordReset
+                                ? handlePasswordReset
                                 : _showOtpField
-                                    ? _handleOtpVerification
-                                    : _handlePhoneSubmit,
+                                    ? handleOtpVerification
+                                    : handlePhoneSubmit,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor:

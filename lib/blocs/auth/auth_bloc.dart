@@ -157,7 +157,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         },
       );
     } catch (e) {
-      log('ResetPassword Error: $e');
       if (e is AuthenticationException) {
         emit(AuthFailure(e.message));
       } else {
@@ -172,11 +171,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       await authRepository.resetPasswordWithPhone(
-        phoneNumber: event.phoneNumber,
-        newPassword: event.newPassword,
-        verificationId: event.verificationId,
-        otp: event.otp,
-      );
+          phoneNumber: event.phoneNumber,
+          newPassword: event.newPassword,
+          verificationId: event.verificationId);
       emit(PasswordResetSuccess());
     } catch (e) {
       log('UpdatePassword Error: $e');
